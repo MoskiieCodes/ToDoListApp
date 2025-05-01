@@ -1,0 +1,125 @@
+@page "/todo"
+@using TodoAppBlazor.Models
+@using TodoAppBlazor.Services
+@inject TaskService TaskService
+
+<h1 class="header">CODING CHALLENGE:<br />BUILD A TO-DO LIST APPLICATION</h1>
+
+<div class="form-card">
+    <h3>New Task</h3>
+    <input placeholder="Title" @bind="title" />
+    <textarea placeholder="Description" @bind="description"></textarea>
+    <div class="row">
+        <input type="date" @bind="dueDate" />
+        <select @bind="priority">
+            <option>Low</option>
+            <option selected>Medium</option>
+            <option>High</option>
+        </select>
+        <button @onclick="AddTask">@addButtonLabel</button>
+    </div>
+</div>
+
+<div class="filter-header">
+    <h3>Tasks</h3>
+    <select @bind="filter">
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+        <option value="completed">Completed</option>
+    </select>
+</div>
+
+@foreach (var task in FilteredTasks)
+{
+    <div class="task-card @(task.IsCompleted ? "completed-task" : "")">
+        <div>
+            <strong>@task.Title</strong><br />
+            <span>@task.Description</span>
+        </div>
+        <div class="badges">
+            <input type="checkbox" @onchange="() => ToggleComplete(task.Id)" checked="@task.IsCompleted" />
+            <span class="badge date">@task.DueDate.ToString("MM-dd")</span>
+            <span class="badge priority @task.Priority.ToLower()">@task.Priority</span>
+            <button class="icon-btn edit" @onclick="() => Edit(task)">✏️</button>
+            <button class="icon-btn delete" @onclick="() => Delete(task.Id)">🗑️</button>
+        </div>
+    </div>
+}
+
+@code {
+    private string title = "";
+    private string description = "";
+    private DateTime dueDate = DateTime.Today;
+    private string priority = "Medium";
+    private string addButtonLabel = "Add Task";
+    private int? editingId = null;
+    private string filter = "pending";
+
+    private List<TaskItem> FilteredTasks
+    {
+        get
+        {
+            try
+            {
+                return filter switch
+                {
+                    "completed" => TaskService.GetTasks(true),
+                    "pending" => TaskService.GetTasks(false),
+                    _ => TaskService.GetTasks()
+                };
+            }   
+            catch
+            {
+                return new List<TaskItem>();
+            }
+        }
+    }
+
+
+    private void AddTask()
+    {
+        if (string.IsNullOrWhiteSpace(title)) return;
+
+        if (editingId == null)
+        {
+            TaskService.AddTask(title, description, dueDate, priority);
+        }
+        else
+        {
+            var task = new TaskItem
+            {
+                Id = editingId.Value,
+                Title = title,
+                Description = description,
+                DueDate = dueDate,
+                Priority = priority,
+                IsCompleted = TaskService.GetTasks().FirstOrDefault(t => t.Id == editingId)?.IsCompleted ?? false
+            };
+            TaskService.UpdateTask(task);
+            addButtonLabel = "Add Task";
+            editingId = null;
+        }
+
+        title = description = "";
+    }
+
+    private void Delete(int id)
+    {
+        TaskService.DeleteTask(id);
+    }
+
+    private void Edit(TaskItem task)
+    {
+        title = task.Title;
+        description = task.Description;
+        dueDate = task.DueDate;
+        priority = task.Priority;
+        editingId = task.Id;
+        addButtonLabel = "Save Changes";
+    }
+
+    private void ToggleComplete(int id)
+    {
+        TaskService.MarkTaskAsCompleted(id);
+    }
+}
