@@ -1,7 +1,7 @@
 @page "/todo"
 @using TodoAppBlazor.Models
 @using TodoAppBlazor.Services
-@inject TaskService TaskService
+@inject TaskApiService TaskApi
 
 <h1 class="header">CODING CHALLENGE:<br />BUILD A TO-DO LIST APPLICATION</h1>
 
@@ -54,58 +54,70 @@
     private string addButtonLabel = "Add Task";
     private int? editingId = null;
     private string filter = "pending";
+    private List<TaskItem> tasks = new();
 
-    private List<TaskItem> FilteredTasks
+    protected override async Task OnInitializedAsync()
     {
-        get
+        try
         {
-            try
-            {
-                return filter switch
-                {
-                    "completed" => TaskService.GetTasks(true),
-                    "pending" => TaskService.GetTasks(false),
-                    _ => TaskService.GetTasks()
-                };
-            }   
-            catch
-            {
-                return new List<TaskItem>();
-            }
+            tasks = await TaskApi.GetAllTasksAsync();
+            Console.WriteLine($"Loaded {tasks.Count} tasks.");
+        }
+        catch (Exception ex)
+        {
+           Console.WriteLine($"OnInit ERROR: {ex.Message}");
         }
     }
 
+    private async Task AddTask()
+{
+    if (string.IsNullOrWhiteSpace(title)) return;
 
-    private void AddTask()
+    try
     {
-        if (string.IsNullOrWhiteSpace(title)) return;
-
         if (editingId == null)
-        {
-            TaskService.AddTask(title, description, dueDate, priority);
-        }
-        else
         {
             var task = new TaskItem
             {
-                Id = editingId.Value,
                 Title = title,
                 Description = description,
                 DueDate = dueDate,
                 Priority = priority,
-                IsCompleted = TaskService.GetTasks().FirstOrDefault(t => t.Id == editingId)?.IsCompleted ?? false
+                IsCompleted = false
             };
-            TaskService.UpdateTask(task);
+            await TaskApi.AddTaskAsync(task);
+        }
+        else
+        {
+            var task = tasks.FirstOrDefault(t => t.Id == editingId);
+            if (task != null)
+            {
+                task.Title = title;
+                task.Description = description;
+                task.DueDate = dueDate;
+                task.Priority = priority;
+                await TaskApi.AddTaskAsync(task); // placeholder for update
+            }
             addButtonLabel = "Add Task";
             editingId = null;
         }
 
         title = description = "";
-    }
+        dueDate = DateTime.Today;
+        tasks = await TaskApi.GetAllTasksAsync();
 
-    private void Delete(int id)
+        Console.WriteLine("Task added and list refreshed.");
+    }
+    catch (Exception ex)
     {
-        TaskService.DeleteTask(id);
+        Console.WriteLine($"AddTask ERROR: {ex.Message}");
+    }
+}
+
+    private async Task Delete(int id)
+    {
+        await TaskApi.DeleteTaskAsync(id);
+        tasks = await TaskApi.GetAllTasksAsync();
     }
 
     private void Edit(TaskItem task)
@@ -118,8 +130,16 @@
         addButtonLabel = "Save Changes";
     }
 
-    private void ToggleComplete(int id)
+    private async Task ToggleComplete(int id)
     {
-        TaskService.MarkTaskAsCompleted(id);
+        await TaskApi.MarkCompletedAsync(id);
+        tasks = await TaskApi.GetAllTasksAsync();
     }
+
+    private List<TaskItem> FilteredTasks => filter switch
+    {
+        "completed" => tasks.Where(t => t.IsCompleted).ToList(),
+        "pending" => tasks.Where(t => !t.IsCompleted).ToList(),
+        _ => tasks
+    };
 }

@@ -1029,3 +1029,4 @@ C:\Users\Oamogetswe\Documents\Lightstone Coding Challenge\TodoAppBlazor\obj\Debu
 C:\Users\Oamogetswe\Documents\Lightstone Coding Challenge\TodoAppBlazor\obj\Debug\net8.0\refint\TodoAppBlazor.dll
 C:\Users\Oamogetswe\Documents\Lightstone Coding Challenge\TodoAppBlazor\obj\Debug\net8.0\TodoAppBlazor.pdb
 C:\Users\Oamogetswe\Documents\Lightstone Coding Challenge\TodoAppBlazor\obj\Debug\net8.0\ref\TodoAppBlazor.dll
+C:\Users\Oamogetswe\Documents\Lightstone Coding Challenge\TodoAppBlazor\obj\Debug\net8.0\TodoAppBlazor.sourcelink.json
